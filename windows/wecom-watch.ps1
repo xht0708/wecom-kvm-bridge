@@ -59,7 +59,12 @@ public static class WeComWindowProbe {
         uint style = unchecked((uint)GetWindowLong(hwnd, -16));
         uint exstyle = unchecked((uint)GetWindowLong(hwnd, -20));
         // Observed call popup: top-level, TOPMOST | TOOLWINDOW; not a child.
-        return (style & 0x40000000u) == 0 && (exstyle & 0x88u) == 0x88u;
+        // Exclude non-activating menu popups (observed label picker: 0x08000088).
+        // Observed incoming call popup: 0x00000088.
+        const uint WS_EX_NOACTIVATE = 0x08000000u;
+        return (style & 0x40000000u) == 0 &&
+               (exstyle & 0x88u) == 0x88u &&
+               (exstyle & WS_EX_NOACTIVATE) == 0;
     }
     public static string[] GetCallHandles() {
         var items = new List<string>();
@@ -169,7 +174,7 @@ public sealed class WeComShellHook : NativeWindow, IDisposable {
 }
 '@
 
-    Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) listener_started version=2.2.2" -Encoding UTF8
+    Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) listener_started version=2.2.3" -Encoding UTF8
     try {
         $hook = [WeComShellHook]::new()
         Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) shell_hook_registered" -Encoding UTF8
